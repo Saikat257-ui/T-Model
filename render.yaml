@@ -1,0 +1,54 @@
+services:
+  # Backend API Service
+  - type: web
+    name: t-model-platform-api
+    runtime: node
+    buildCommand: npm install && npm run build
+    startCommand: npm start
+    rootDir: backend
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 10000
+      - key: JWT_SECRET
+        generateValue: true
+      - key: JWT_EXPIRES_IN
+        value: 7d
+      - key: RATE_LIMIT_WINDOW_MS
+        value: 900000
+      - key: RATE_LIMIT_MAX_REQUESTS
+        value: 100
+      - key: MAX_FILE_SIZE
+        value: 5242880
+      - key: ALLOWED_FILE_TYPES
+        value: image/jpeg,image/png,image/jpg,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document
+      - key: NPM_CONFIG_PRODUCTION
+        value: false
+      # These need to be set manually in Render dashboard
+      # DATABASE_URL: Add your Supabase PostgreSQL connection string
+      # SUPABASE_URL: Add your Supabase project URL
+      # SUPABASE_ANON_KEY: Add your Supabase anon key
+      # SUPABASE_SERVICE_KEY: Add your Supabase service role key
+      # SUPABASE_STORAGE_BUCKET: t-model-platform-files
+      # SUPABASE_STORAGE_URL: Add your Supabase storage URL
+      # FRONTEND_URL: Will be set to the frontend service URL
+
+  # Frontend Static Site Service
+  - type: static
+    name: t-model-platform-frontend
+    buildCommand: npm install && npm run build
+    publishDir: build
+    rootDir: frontend
+    envVars:
+      - key: GENERATE_SOURCEMAP
+        value: false
+      # REACT_APP_API_URL will be automatically set to the backend service URL
+
+# Database (External - Using Supabase)
+# Note: You'll use your existing Supabase database
+# Make sure to set up the following in your Render dashboard:
+# 1. DATABASE_URL pointing to your Supabase PostgreSQL instance
+# 2. All Supabase-related environment variables
+# 3. FRONTEND_URL in the backend service pointing to the frontend service URL
+# 4. REACT_APP_API_URL in the frontend service pointing to the backend service URL

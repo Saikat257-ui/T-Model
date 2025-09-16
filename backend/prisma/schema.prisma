@@ -1,0 +1,295 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id             String          @id @default(cuid())
+  email          String          @unique
+  password       String
+  firstName      String?         @map("first_name")
+  lastName       String?         @map("last_name")
+  phone          String?
+  industryId     String?         @map("industry_id")
+  isActive       Boolean         @default(true) @map("is_active")
+  createdAt      DateTime        @default(now()) @map("created_at")
+  updatedAt      DateTime        @updatedAt @map("updated_at")
+  shipments      Shipment[]
+  tourPackages   TourPackage[]
+  travelBookings TravelBooking[]
+  profile        UserProfile?
+  industry       Industry?       @relation(fields: [industryId], references: [id])
+  
+  // Gamification relations
+  progress       UserProgress?
+  badges         UserBadge[]
+  achievements   Achievement[]
+  leaderboard    Leaderboard[]
+
+  @@map("users")
+}
+
+model Industry {
+  id          String  @id @default(cuid())
+  name        String  @unique
+  description String?
+  isActive    Boolean @default(true) @map("is_active")
+  users       User[]
+
+  @@map("industries")
+}
+
+model UserProfile {
+  id                      String   @id @default(cuid())
+  userId                  String   @unique @map("user_id")
+  avatar                  String?
+  timezone                String   @default("UTC")
+  language                String   @default("en")
+  notificationPreferences Json     @default("{}") @map("notification_preferences")
+  updatedAt               DateTime @updatedAt @map("updated_at")
+  user                    User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("user_profiles")
+}
+
+model TourPackage {
+  id           String        @id @default(cuid())
+  userId       String        @map("user_id")
+  name         String
+  description  String?
+  price        Decimal
+  duration     Int
+  destinations Json
+  maxCapacity  Int           @map("max_capacity")
+  isActive     Boolean       @default(true) @map("is_active")
+  createdAt    DateTime      @default(now()) @map("created_at")
+  updatedAt    DateTime      @updatedAt @map("updated_at")
+  bookings     TourBooking[]
+  user         User          @relation(fields: [userId], references: [id])
+
+  @@map("tour_packages")
+}
+
+model TourBooking {
+  id           String      @id @default(cuid())
+  packageId    String      @map("package_id")
+  customerInfo Json        @map("customer_info")
+  startDate    DateTime    @map("start_date")
+  endDate      DateTime    @map("end_date")
+  participants Int         @default(1)
+  totalAmount  Decimal     @map("total_amount")
+  status       String      @default("pending")
+  createdAt    DateTime    @default(now()) @map("created_at")
+  updatedAt    DateTime    @updatedAt @map("updated_at")
+  tourPackage  TourPackage @relation(fields: [packageId], references: [id])
+
+  @@map("tour_bookings")
+}
+
+model TravelBooking {
+  id          String    @id @default(cuid())
+  userId      String    @map("user_id")
+  type        String
+  details     Json
+  startDate   DateTime  @map("start_date")
+  endDate     DateTime? @map("end_date")
+  totalAmount Decimal   @map("total_amount")
+  status      String    @default("pending")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+  user        User      @relation(fields: [userId], references: [id])
+
+  @@map("travel_bookings")
+}
+
+model TravelDocument {
+  id             String    @id @default(cuid())
+  userId         String    @map("user_id")
+  documentType   String    @map("document_type")
+  documentNumber String    @map("document_number")
+  filePath       String?   @map("file_path")
+  expiryDate     DateTime? @map("expiry_date")
+  createdAt      DateTime  @default(now()) @map("created_at")
+  updatedAt      DateTime  @updatedAt @map("updated_at")
+
+  @@map("travel_documents")
+}
+
+model Shipment {
+  id                String             @id @default(cuid())
+  userId            String             @map("user_id")
+  trackingNumber    String             @unique @map("tracking_number")
+  origin            Json
+  destination       Json
+  weight            Decimal?
+  dimensions        Json?
+  status            String             @default("created")
+  estimatedDelivery DateTime?          @map("estimated_delivery")
+  actualDelivery    DateTime?          @map("actual_delivery")
+  createdAt         DateTime           @default(now()) @map("created_at")
+  updatedAt         DateTime           @updatedAt @map("updated_at")
+  trackingHistory   ShipmentTracking[]
+  user              User               @relation(fields: [userId], references: [id])
+
+  @@map("shipments")
+}
+
+model ShipmentTracking {
+  id          String   @id @default(cuid())
+  shipmentId  String   @map("shipment_id")
+  status      String
+  location    String?
+  description String?
+  timestamp   DateTime @default(now())
+  shipment    Shipment @relation(fields: [shipmentId], references: [id], onDelete: Cascade)
+
+  @@map("shipment_tracking")
+}
+
+model Vehicle {
+  id              String   @id @default(cuid())
+  userId          String   @map("user_id")
+  vehicleType     String   @map("vehicle_type")
+  licensePlate    String   @unique @map("license_plate")
+  capacity        Decimal?
+  currentLocation Json?    @map("current_location")
+  status          String   @default("available")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  @@map("vehicles")
+}
+
+model Payment {
+  id        String   @id @default(cuid())
+  userId    String   @map("user_id")
+  amount    Decimal
+  currency  String   @default("USD")
+  method    String
+  status    String   @default("pending")
+  reference String?
+  metadata  Json?
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("payments")
+}
+
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String   @map("user_id")
+  title     String
+  message   String
+  type      String   @default("info")
+  isRead    Boolean  @default(false) @map("is_read")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@map("notifications")
+}
+
+// Gamification Models
+model UserProgress {
+  id                String   @id @default(cuid())
+  userId            String   @unique @map("user_id")
+  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  totalPoints       Int      @default(0) @map("total_points")
+  currentLevel      Int      @default(1) @map("current_level")
+  experiencePoints  Int      @default(0) @map("experience_points")
+  completionRate    Float    @default(0.0) @map("completion_rate")
+  tourProgress      Int      @default(0) @map("tour_progress")
+  travelProgress    Int      @default(0) @map("travel_progress")
+  logisticsProgress Int      @default(0) @map("logistics_progress")
+  createdAt         DateTime @default(now()) @map("created_at")
+  updatedAt         DateTime @updatedAt @map("updated_at")
+  
+  @@map("user_progress")
+}
+
+model Badge {
+  id          String        @id @default(cuid())
+  name        String        @unique
+  description String?
+  iconUrl     String?       @map("icon_url")
+  category    BadgeCategory
+  industry    String?       // null for universal badges
+  criteria    Json          // conditions to earn badge
+  points      Int           @default(0)
+  isActive    Boolean       @default(true) @map("is_active")
+  createdAt   DateTime      @default(now()) @map("created_at")
+  
+  userBadges  UserBadge[]
+  
+  @@map("badges")
+}
+
+model UserBadge {
+  id        String   @id @default(cuid())
+  userId    String   @map("user_id")
+  badgeId   String   @map("badge_id")
+  earnedAt  DateTime @default(now()) @map("earned_at")
+  
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  badge     Badge    @relation(fields: [badgeId], references: [id], onDelete: Cascade)
+  
+  @@unique([userId, badgeId])
+  @@map("user_badges")
+}
+
+model Achievement {
+  id            String          @id @default(cuid())
+  userId        String          @map("user_id")
+  type          AchievementType
+  category      String          // tour, travel, logistics
+  description   String
+  points        Int
+  metadata      Json?           // additional context
+  achievedAt    DateTime        @default(now()) @map("achieved_at")
+  
+  user          User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@map("achievements")
+}
+
+model Leaderboard {
+  id        String             @id @default(cuid())
+  userId    String             @map("user_id")
+  industry  String
+  period    LeaderboardPeriod
+  rank      Int
+  score     Float
+  metadata  Json?
+  createdAt DateTime           @default(now()) @map("created_at")
+  
+  user      User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@unique([userId, industry, period])
+  @@map("leaderboards")
+}
+
+// Gamification Enums
+enum BadgeCategory {
+  MILESTONE
+  ACHIEVEMENT
+  COMPLETION
+  REVENUE
+  SPECIAL
+}
+
+enum AchievementType {
+  FIRST_ACTION
+  MILESTONE_REACHED
+  STREAK_ACHIEVED
+  TARGET_MET
+  SPECIAL_EVENT
+}
+
+enum LeaderboardPeriod {
+  WEEKLY
+  MONTHLY
+  QUARTERLY
+  YEARLY
+}
