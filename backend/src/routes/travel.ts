@@ -68,9 +68,8 @@ router.get('/analytics', authenticateToken, async (req: any, res, next) => {
   }
 });
 
-// =============================================================================
+
 // FUTURE QUICK ACTIONS ENDPOINTS - FOR FRONTEND DASHBOARD INTEGRATION
-// =============================================================================
 // These endpoints will make the Travel Dashboard Quick Actions functional:
 // 1. Book Flight, 2. Book Hotel, 3. Upload Document, 4. Plan Itinerary
 

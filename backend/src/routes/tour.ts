@@ -87,9 +87,8 @@ router.get('/analytics', authenticateToken, async (req: any, res, next) => {
 });
 
 
-// =============================================================================
+
 // FUTURE QUICK ACTIONS ENDPOINTS - FOR FRONTEND DASHBOARD INTEGRATION
-// =============================================================================
 // These endpoints will make the Tour Dashboard Quick Actions functional:
 // 1. Create Package, 2. Manage Guides, 3. View Analytics, 4. Customer Support
 

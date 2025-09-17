@@ -93,9 +93,9 @@ export const tourAPI = {
     return response.data;
   },
 
-  // =============================================================================
+ 
   // FUTURE QUICK ACTIONS API METHODS - FOR DASHBOARD INTEGRATION
-  // =============================================================================
+  
   
   // Package Management (Create Package Quick Action)
   createPackage: async (packageData: any) => {
@@ -162,9 +162,9 @@ export const travelAPI = {
     return response.data;
   },
 
-  // =============================================================================
+
   // FUTURE QUICK ACTIONS API METHODS - FOR DASHBOARD INTEGRATION
-  // =============================================================================
+
   
   // Flight & Hotel Booking (Book Flight & Book Hotel Quick Actions)
   bookFlight: async (flightData: any) => {
@@ -247,9 +247,9 @@ export const logisticsAPI = {
     return response.data;
   },
 
-  // =============================================================================
+ 
   // FUTURE QUICK ACTIONS API METHODS - FOR DASHBOARD INTEGRATION
-  // =============================================================================
+
   
   // Shipment Management (Create Shipment Quick Action)
   createShipment: async (shipmentData: any) => {

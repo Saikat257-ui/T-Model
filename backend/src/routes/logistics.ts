@@ -82,9 +82,8 @@ router.get('/analytics', authenticateToken, async (req: any, res, next) => {
   }
 });
 
-// =============================================================================
+
 // FUTURE QUICK ACTIONS ENDPOINTS - FOR FRONTEND DASHBOARD INTEGRATION
-// =============================================================================
 // These endpoints will make the Logistics Dashboard Quick Actions functional:
 // 1. Create Shipment, 2. Add Vehicle, 3. Optimize Routes, 4. Track Shipments
 
