@@ -13,15 +13,12 @@ The T-Model Platform is a comprehensive multi-industry business management syste
 
 ## 🚀 Quick Setup
 
-### Option 1: Automated Setup (Windows)
+### 1. Clone and Install Dependencies
+
 ```bash
-# Run the automated setup script
-setup.bat
-```
-
-### Option 2: Manual Setup
-
-#### 1. Clone and Install Dependencies
+git clone [YOUR_REPOSITORY_URL]
+cd [YOUR_PROJECT_DIRECTORY]
+npm install
 
 ```bash
 # Backend setup
@@ -62,6 +59,8 @@ ALLOWED_FILE_TYPES=image/jpeg,image/png,image/jpg,application/pdf,application/ms
 # Rate Limiting
 RATE_LIMIT_WINDOW_MS=900000
 RATE_LIMIT_MAX_REQUESTS=100
+
+FRONTEND_URL=http://localhost:3000
 ```
 
 **Frontend Environment** (`frontend/.env`):
@@ -81,7 +80,7 @@ npm run prisma:generate
 # Push database schema to Supabase
 npm run prisma:push
 
-# Seed database with initial data
+# Seed database with initial data (If needed)
 npm run prisma:seed
 ```
 
@@ -120,12 +119,7 @@ npm start
 # Build for production
 npm run build
 
-# Run tests
-npm test
 
-# Eject (not recommended)
-npm run eject
-```
 
 ## 🗃️ Database Schema
 
