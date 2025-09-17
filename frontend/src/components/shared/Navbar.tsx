@@ -9,6 +9,7 @@ const Navbar: React.FC = () => {
   const navigate = useNavigate();
   const { user, isAuthenticated } = useSelector((state: RootState) => state.auth);
   const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [isScrolled, setIsScrolled] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   const handleLogout = () => {
@@ -22,9 +23,18 @@ const Navbar: React.FC = () => {
         setDropdownOpen(false);
       }
     }
+
+    function handleScroll() {
+      const scrolled = window.scrollY > 10;
+      setIsScrolled(scrolled);
+    }
+
     document.addEventListener('mousedown', handleClickOutside);
+    window.addEventListener('scroll', handleScroll);
+
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
+      window.removeEventListener('scroll', handleScroll);
     };
   }, []);
 
@@ -33,7 +43,11 @@ const Navbar: React.FC = () => {
   }
 
   return (
-    <nav className="bg-white shadow-sm border-b">
+    <nav className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 border-b ${
+      isScrolled 
+        ? 'bg-white/70 backdrop-blur-lg shadow-lg border-white/20' 
+        : 'bg-white shadow-sm'
+    }`}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
           {/* Logo and Brand */}

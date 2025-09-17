@@ -90,7 +90,7 @@ const BadgeDisplay: React.FC<BadgeDisplayProps> = ({
         {displayBadges.map((badge, index) => (
           <div
             key={badge.id || index}
-            className={`relative group flex flex-col items-center p-3 rounded-lg border transition-all duration-200 hover:scale-105 ${
+            className={`relative group flex flex-col items-center p-3 rounded-lg border transition-all duration-200 hover:scale-105 min-w-[120px] max-w-[140px] break-words ${
               badge.isEarned 
                 ? 'bg-gradient-to-br from-yellow-50 to-amber-50 border-yellow-200 shadow-sm' 
                 : 'bg-gray-50 border-gray-200 opacity-60'
