@@ -183,9 +183,8 @@ npm start
 ### Production Mode
 ```bash
 # Build both applications
-cd t-model-platform/backend; npm run build
-cd t-model-platform/frontend; npm run build
+cd backend; npm run build
+cd frontend; npm run build
 
 # Start production server
-cd t-model-platform/backend; npm start
-```
+cd backend; npm start
