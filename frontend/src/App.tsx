@@ -8,7 +8,7 @@ import './index.css';
 function App() {
   return (
     <Provider store={store}>
-      <Router>
+      <Router basename="/">
         <div className="App">
           <AppRoutes />
         </div>

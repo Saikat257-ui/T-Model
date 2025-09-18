@@ -1,0 +1,13 @@
+{
+  "name": "t-model-frontend",
+  "version": "1.0.0",
+  "private": true,
+  "homepage": ".",
+  "dependencies": {
+    "serve": "^14.2.0"
+  },
+  "scripts": {
+    "start": "serve -s build -l 3000",
+    "build": "react-scripts build"
+  }
+}
