@@ -166,13 +166,10 @@ function getConnectionUrl() {
   const isProd = process.env.NODE_ENV === 'production';
   
   if (isProd) {
-    // Use the original DATABASE_URL with proper SSL configuration
+    // Render PostgreSQL configuration
     const url = process.env.DATABASE_URL;
-    const separator = url.includes('?') ? '&' : '?';
-    const finalUrl = `${url}${separator}sslmode=require&connect_timeout=60`;
-    
-    logger.info('Using production configuration with original DATABASE_URL');
-    return finalUrl;
+    logger.info('Using Render PostgreSQL database');
+    return url;
   }
 
   // Development configuration
