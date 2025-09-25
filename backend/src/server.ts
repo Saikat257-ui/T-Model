@@ -107,25 +107,30 @@ process.on('SIGINT', async () => {
 app.listen(PORT, async () => {
   logger.info(`T-Model Platform API server running on port ${PORT}`);
   logger.info(`Environment: ${process.env.NODE_ENV}`);
-  
-  // Initialize default industries
-  const industriesInitialized = await initializeIndustries();
-  if (industriesInitialized) {
-    logger.info('Industries initialization completed successfully');
-  } else {
-    logger.warn('Failed to initialize industries');
-  }
-  
-  // Initialize default badges
-  await gamificationService.initializeBadges();
-  logger.info('Badge initialization completed');
-  
-  // Initialize Supabase storage
-  const storageInitialized = await initializeStorage();
-  if (storageInitialized) {
-    logger.info('Supabase storage initialized successfully');
-  } else {
-    logger.warn('Failed to initialize Supabase storage');
+
+  try {
+    // Initialize default industries
+    const industriesInitialized = await initializeIndustries();
+    if (industriesInitialized) {
+      logger.info('Industries initialization completed successfully');
+    } else {
+      logger.warn('Failed to initialize industries');
+    }
+
+    // Initialize default badges
+    await gamificationService.initializeBadges();
+    logger.info('Badge initialization completed');
+
+    // Initialize Supabase storage
+    const storageInitialized = await initializeStorage();
+    if (storageInitialized) {
+      logger.info('Supabase storage initialized successfully');
+    } else {
+      logger.warn('Failed to initialize Supabase storage');
+    }
+  } catch (error) {
+    logger.error('Error during server initialization:', error);
+    process.exit(1);
   }
 });
 
