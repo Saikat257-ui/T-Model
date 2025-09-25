@@ -108,6 +108,17 @@ app.listen(PORT, async () => {
   logger.info(`T-Model Platform API server running on port ${PORT}`);
   logger.info(`Environment: ${process.env.NODE_ENV}`);
 
+  // --- PRE-FLIGHT DATABASE CHECK ---
+  try {
+    logger.info('[SERVER STARTUP] Performing pre-flight database check...');
+    const result = await prisma.$queryRaw`SELECT 1;`;
+    logger.info('[SERVER STARTUP] ✅ Pre-flight database check successful.');
+  } catch (e) {
+    logger.error('[SERVER STARTUP] ❌ Pre-flight database check FAILED.', e);
+    // We don't exit here, we let the initialization fail below to get the full error context.
+  }
+  // --- END PRE-FLIGHT CHECK ---
+
   try {
     // Initialize default industries
     const industriesInitialized = await initializeIndustries();
