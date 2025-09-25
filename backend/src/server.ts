@@ -24,6 +24,19 @@ import prisma from './utils/database';
 import { initializeIndustries } from './utils/initializeIndustries';
 import gamificationService from './services/gamificationService';
 
+// Test database connection immediately
+async function testDatabaseConnection() {
+  try {
+    console.log('Testing database connection...');
+    await prisma.$queryRaw`SELECT 1`;
+    console.log('✅ Database connection successful');
+    return true;
+  } catch (error) {
+    console.error('❌ Database connection failed:', error);
+    return false;
+  }
+}
+
 const app = express();
 
 // Security middleware
