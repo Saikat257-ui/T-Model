@@ -1,7 +1,7 @@
 generator client {
-  provider      = "prisma-client-js"
-  // Force update for Render deployment with only OpenSSL 3.0.x
-  binaryTargets = ["debian-openssl-3.0.x"]
+  provider        = "prisma-client-js"
+  previewFeatures = ["metrics"]
+  binaryTargets   = ["native", "debian-openssl-3.0.x", "rhel-openssl-3.0.x"]
 }
 
 datasource db {

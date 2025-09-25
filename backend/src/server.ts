@@ -20,22 +20,9 @@ import gamificationRoutes from './routes/gamification';
 import { errorHandler } from './middleware/errorHandler';
 import { logger } from './utils/logger';
 import { initializeStorage } from './utils/supabase';
-import prisma from './utils/database';
+import prisma, { testConnection } from './utils/database';
 import { initializeIndustries } from './utils/initializeIndustries';
 import gamificationService from './services/gamificationService';
-
-// Test database connection immediately
-async function testDatabaseConnection() {
-  try {
-    console.log('Testing database connection...');
-    await prisma.$queryRaw`SELECT 1`;
-    console.log('✅ Database connection successful');
-    return true;
-  } catch (error) {
-    console.error('❌ Database connection failed:', error);
-    return false;
-  }
-}
 
 const app = express();
 
@@ -121,16 +108,15 @@ app.listen(PORT, async () => {
   logger.info(`T-Model Platform API server running on port ${PORT}`);
   logger.info(`Environment: ${process.env.NODE_ENV}`);
 
-  // --- PRE-FLIGHT DATABASE CHECK ---
-  try {
-    logger.info('[SERVER STARTUP] Performing pre-flight database check...');
-    const result = await prisma.$queryRaw`SELECT 1;`;
-    logger.info('[SERVER STARTUP] ✅ Pre-flight database check successful.');
-  } catch (e) {
-    logger.error('[SERVER STARTUP] ❌ Pre-flight database check FAILED.', e);
-    // We don't exit here, we let the initialization fail below to get the full error context.
+  // Test database connection with retries
+  logger.info('[SERVER STARTUP] Testing database connection...');
+  const isConnected = await testConnection();
+
+  if (!isConnected) {
+    logger.error('[SERVER STARTUP] Failed to establish database connection after multiple retries');
+    logger.error('[SERVER STARTUP] Server will continue running but database operations will fail');
+    return;
   }
-  // --- END PRE-FLIGHT CHECK ---
 
   try {
     // Initialize default industries

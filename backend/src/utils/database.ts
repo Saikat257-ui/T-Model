@@ -1,49 +1,109 @@
 import { PrismaClient } from '@prisma/client';
+import { logger } from './logger';
 
-console.log(`[database.ts] DATABASE_URL is ${process.env.DATABASE_URL ? 'LOADED' : 'NOT LOADED'}`);
-console.log(`[database.ts] NODE_ENV is ${process.env.NODE_ENV}`);
+// Connection configuration
+const MAX_RETRIES = 3;
+const RETRY_DELAY = 5000; // 5 seconds
 
-// Function to modify the connection URL
-function getConnectionUrl() {
-  if (!process.env.DATABASE_URL) {
-    throw new Error('DATABASE_URL is not defined');
+function parseConnectionUrl(url: string) {
+  try {
+    const parsedUrl = new URL(url);
+    return {
+      host: parsedUrl.hostname,
+      port: parsedUrl.port,
+      database: parsedUrl.pathname.replace('/', ''),
+      username: parsedUrl.username,
+      ssl: true
+    };
+  } catch (error) {
+    logger.error('Failed to parse DATABASE_URL:', error);
+    throw error;
   }
-
-  const url = new URL(process.env.DATABASE_URL);
-  
-  // In production:
-  // 1. Use direct connection (port 5432)
-  // 2. Ensure SSL is enabled
-  // 3. Don't use pgBouncer
-  if (process.env.NODE_ENV === 'production') {
-    url.port = '5432';
-    const searchParams = new URLSearchParams({
-      'sslmode': 'require',
-      'pool_timeout': '0'
-    });
-    url.search = searchParams.toString();
-    console.log('[database.ts] Using production configuration with direct connection');
-  } else {
-    // In development, use pgBouncer
-    url.port = '6543';
-    url.search = '?pgbouncer=true';
-    console.log('[database.ts] Using development configuration with pgBouncer');
-  }
-
-  return url.toString();
 }
 
-// Create a single instance of Prisma Client with retry logic
+function buildConnectionUrl() {
+  if (!process.env.DATABASE_URL) {
+    throw new Error('DATABASE_URL environment variable is not set');
+  }
+
+  try {
+    const baseUrl = process.env.DATABASE_URL;
+    const parsed = parseConnectionUrl(baseUrl);
+
+    // Always use direct connection in production
+    if (process.env.NODE_ENV === 'production') {
+      const url = new URL(baseUrl);
+      url.port = '5432'; // Direct connection port
+      
+      // Add required SSL and connection parameters
+      const params = new URLSearchParams({
+        'sslmode': 'require',
+        'connection_limit': '10',
+        'pool_timeout': '30',
+        'connect_timeout': '20'
+      });
+      
+      url.search = params.toString();
+      logger.info('Using production database configuration with SSL and connection pooling');
+      return url.toString();
+    }
+
+    // Development configuration
+    logger.info('Using development database configuration');
+    return `${baseUrl}?pgbouncer=true`;
+  } catch (error) {
+    logger.error('Error building database connection URL:', error);
+    throw error;
+  }
+}
+
+// Create Prisma client with robust configuration
 const prisma = new PrismaClient({
-  log: ['error', 'warn', 'info'], // Enable all logging in both dev and prod temporarily
+  log: [
+    { level: 'warn', emit: 'event' },
+    { level: 'info', emit: 'event' },
+    { level: 'error', emit: 'event' },
+  ],
+  errorFormat: 'pretty',
   datasources: {
     db: {
-      url: getConnectionUrl(),
+      url: buildConnectionUrl(),
     },
   },
-  // Add connection retry logic
-  errorFormat: 'pretty',
 });
+
+// Log all database events
+prisma.$on('error', (e) => {
+  logger.error('Prisma Client error:', e);
+});
+
+prisma.$on('warn', (e) => {
+  logger.warn('Prisma Client warning:', e);
+});
+
+prisma.$on('info', (e) => {
+  logger.info('Prisma Client info:', e);
+});
+
+// Test database connection with retries
+export async function testConnection(retries = MAX_RETRIES): Promise<boolean> {
+  try {
+    await prisma.$connect();
+    await prisma.$queryRaw`SELECT 1`;
+    logger.info('Database connection test successful');
+    return true;
+  } catch (error) {
+    logger.error('Database connection test failed:', error);
+    
+    if (retries > 0) {
+      logger.info(`Retrying connection in ${RETRY_DELAY/1000} seconds... (${retries} attempts remaining)`);
+      await new Promise(resolve => setTimeout(resolve, RETRY_DELAY));
+      return testConnection(retries - 1);
+    }
+    
+    return false;
+  }
+}
 
 // Handle graceful shutdown
 process.on('SIGINT', async () => {
