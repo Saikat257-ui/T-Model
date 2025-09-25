@@ -1,5 +1,7 @@
 import { PrismaClient } from '@prisma/client';
 
+console.log(`[database.ts] DATABASE_URL is ${process.env.DATABASE_URL ? 'LOADED' : 'NOT LOADED'}`);
+
 // Create a single instance of Prisma Client
 const prisma = new PrismaClient({
   log: process.env.NODE_ENV === 'development' ? ['query', 'info', 'warn', 'error'] : ['error'],
