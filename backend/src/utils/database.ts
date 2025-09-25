@@ -166,17 +166,13 @@ function getConnectionUrl() {
   const isProd = process.env.NODE_ENV === 'production';
   
   if (isProd) {
-    const url = new URL(process.env.DATABASE_URL);
+    // Use the original DATABASE_URL with proper SSL configuration
+    const url = process.env.DATABASE_URL;
+    const separator = url.includes('?') ? '&' : '?';
+    const finalUrl = `${url}${separator}sslmode=require&connect_timeout=60`;
     
-    // Force direct connection for Render since pooler consistently fails
-    if (url.hostname.includes('pooler.supabase.com')) {
-      url.hostname = 'db.zqjmkrjatrluvrrllyed.supabase.co';
-    }
-    url.port = '5432';
-    url.search = '?sslmode=require';
-    logger.info('Using production configuration with direct connection');
-    
-    return url.toString();
+    logger.info('Using production configuration with original DATABASE_URL');
+    return finalUrl;
   }
 
   // Development configuration
