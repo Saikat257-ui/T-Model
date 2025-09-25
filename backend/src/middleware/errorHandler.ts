@@ -11,28 +11,46 @@ export const errorHandler = (
   req: Request,
   res: Response,
   next: NextFunction
-): void => {
-  let { statusCode = 500, message } = error;
+) => {
+  // Default to 500 if statusCode is not set
+  const statusCode = error.statusCode || 500;
 
-  // Log error details
+  // Log error details with enhanced context
   logger.error('Error occurred:', {
-    error: message,
+    error: error.message,
+    name: error.name,
     stack: error.stack,
-    url: req.url,
+    url: req.originalUrl || req.url,
     method: req.method,
     ip: req.ip,
-    statusCode
+    statusCode,
+    body: req.body,
+    query: req.query,
+    params: req.params,
+    headers: req.headers,
+    timestamp: new Date().toISOString()
   });
 
-  // Don't leak error details in production
-  if (process.env.NODE_ENV === 'production' && statusCode === 500) {
-    message = 'Internal Server Error';
+  // Handle specific error types
+  if (error.name === 'PrismaClientInitializationError') {
+    logger.error('Database connection error:', error);
+    return res.status(503).json({
+      error: 'Service temporarily unavailable',
+      message: 'Database connection error'
+    });
   }
 
+  // In production, send safe error messages
+  const clientMessage = process.env.NODE_ENV === 'production'
+    ? statusCode === 500 ? 'Internal Server Error' : error.message
+    : error.message;
+
   res.status(statusCode).json({
-    error: message,
-    ...(process.env.NODE_ENV === 'development' && { 
-      stack: error.stack 
+    error: clientMessage,
+    status: 'error',
+    ...(process.env.NODE_ENV === 'development' && {
+      stack: error.stack,
+      detail: error.message
     })
   });
 };

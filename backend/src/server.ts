@@ -116,17 +116,33 @@ process.on('SIGINT', async () => {
   process.exit(0);
 });
 
+// Handle uncaught exceptions and unhandled rejections
+process.on('uncaughtException', (error) => {
+  logger.error('Uncaught Exception:', error);
+  // Give the logger time to write before exiting
+  setTimeout(() => process.exit(1), 1000);
+});
+
+process.on('unhandledRejection', (reason, promise) => {
+  logger.error('Unhandled Rejection at:', promise, 'reason:', reason);
+});
+
 app.listen(PORT, async () => {
   logger.info(`T-Model Platform API server running on port ${PORT}`);
   logger.info(`Environment: ${process.env.NODE_ENV}`);
 
-  // Test database connection with retries
-  logger.info('[SERVER STARTUP] Testing database connection...');
-  const isConnected = await testConnection();
+  try {
+    // Test database connection with retries
+    logger.info('[SERVER STARTUP] Testing database connection...');
+    const isConnected = await testConnection();
 
-  if (!isConnected) {
-    logger.error('[SERVER STARTUP] Failed to establish database connection after multiple retries');
-    logger.error('[SERVER STARTUP] Server will continue running but database operations will fail');
+    if (!isConnected) {
+      logger.error('[SERVER STARTUP] Failed to establish database connection after multiple retries');
+      logger.error('[SERVER STARTUP] Server will continue running but database operations will fail');
+      return;
+    }
+  } catch (error) {
+    logger.error('[SERVER STARTUP] Error during server initialization:', error);
     return;
   }
 
