@@ -26,6 +26,11 @@ import gamificationService from './services/gamificationService';
 
 const app = express();
 
+// Trust proxy - required for rate limiting behind Render's proxy
+if (process.env.NODE_ENV === 'production') {
+  app.set('trust proxy', 1);
+}
+
 // Security middleware
 app.use(helmet());
 app.use(cors({
@@ -40,14 +45,21 @@ app.use(cors({
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
 }));
 
-// Rate limiting - more lenient in development
+// Rate limiting configuration
 const limiter = rateLimit({
   windowMs: parseInt(process.env.RATE_LIMIT_WINDOW_MS || '900000'), // 15 minutes
-  max: parseInt(process.env.RATE_LIMIT_MAX_REQUESTS || (process.env.NODE_ENV === 'development' ? '1000' : '100')),
+  max: parseInt(process.env.RATE_LIMIT_MAX_REQUESTS || '100'),
   message: 'Too many requests from this IP, please try again later.',
-  skip: (req) => {
-    // Skip rate limiting for development environment
-    return process.env.NODE_ENV === 'development';
+  standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
+  legacyHeaders: false, // Disable the `X-RateLimit-*` headers
+  skip: (req) => process.env.NODE_ENV === 'development',
+  // Ensure proper IP detection behind proxy
+  keyGenerator: (req) => {
+    // Use the leftmost forwarded IP if present, otherwise fall back to the socket address
+    return req.ip || 
+           (typeof req.headers['x-forwarded-for'] === 'string' ? req.headers['x-forwarded-for'].split(',')[0].trim() : null) ||
+           req.socket.remoteAddress ||
+           'unknown';
   }
 });
 
