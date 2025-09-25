@@ -158,7 +158,7 @@ import { logger } from './logger';
 const MAX_RETRIES = 3;
 const RETRY_DELAY = 5000; // 5 seconds
 
-function getConnectionUrl(useDirectConnection = false) {
+function getConnectionUrl() {
   if (!process.env.DATABASE_URL) {
     throw new Error('DATABASE_URL environment variable is not set');
   }
@@ -168,24 +168,13 @@ function getConnectionUrl(useDirectConnection = false) {
   if (isProd) {
     const url = new URL(process.env.DATABASE_URL);
     
-    if (useDirectConnection) {
-      // Convert pooler URL to direct connection URL
-      // From: aws-1-ap-southeast-1.pooler.supabase.com:6543
-      // To: db.zqjmkrjatrluvrrllyed.supabase.co:5432
-      if (url.hostname.includes('pooler.supabase.com')) {
-        url.hostname = 'db.zqjmkrjatrluvrrllyed.supabase.co';
-      }
-      url.port = '5432';
-      url.search = '?sslmode=require';
-      logger.info('Using production configuration with direct connection (fallback)');
-    } else {
-      // Default: use pooler connection
-      const separator = url.search ? '&' : '?';
-      url.search = url.search.includes('pgbouncer=true') 
-        ? url.search 
-        : `${url.search}${separator}pgbouncer=true&prepared_statements=false`;
-      logger.info('Using production configuration with pooler connection');
+    // Force direct connection for Render since pooler consistently fails
+    if (url.hostname.includes('pooler.supabase.com')) {
+      url.hostname = 'db.zqjmkrjatrluvrrllyed.supabase.co';
     }
+    url.port = '5432';
+    url.search = '?sslmode=require';
+    logger.info('Using production configuration with direct connection');
     
     return url.toString();
   }
@@ -195,45 +184,35 @@ function getConnectionUrl(useDirectConnection = false) {
   return process.env.DATABASE_URL;
 }
 
-// Create Prisma client with fallback connection strategy
-let prisma: PrismaClient;
-let usingDirectConnection = false;
-
-function createPrismaClient(useDirectConnection = false) {
-  const client = new PrismaClient({
-    log: [
-      { level: 'warn', emit: 'event' },
-      { level: 'info', emit: 'event' },
-      { level: 'error', emit: 'event' },
-    ],
-    errorFormat: 'pretty',
-    datasources: {
-      db: {
-        url: getConnectionUrl(useDirectConnection)
-      }
+// Create Prisma client with direct connection
+const prisma = new PrismaClient({
+  log: [
+    { level: 'warn', emit: 'event' },
+    { level: 'info', emit: 'event' },
+    { level: 'error', emit: 'event' },
+  ],
+  errorFormat: 'pretty',
+  datasources: {
+    db: {
+      url: getConnectionUrl()
     }
-  });
+  }
+});
 
-  // Set up event listeners
-  client.$on('error', (e) => {
-    logger.error('Prisma Client error:', e);
-  });
+// Set up event listeners
+prisma.$on('error', (e) => {
+  logger.error('Prisma Client error:', e);
+});
 
-  client.$on('warn', (e) => {
-    logger.warn('Prisma Client warning:', e);
-  });
+prisma.$on('warn', (e) => {
+  logger.warn('Prisma Client warning:', e);
+});
 
-  client.$on('info', (e) => {
-    logger.info('Prisma Client info:', e);
-  });
+prisma.$on('info', (e) => {
+  logger.info('Prisma Client info:', e);
+});
 
-  return client;
-}
-
-// Start with pooler connection
-prisma = createPrismaClient(false);
-
-// Test database connection with fallback strategy
+// Test database connection
 export async function testConnection(retries = MAX_RETRIES): Promise<boolean> {
   try {
     await prisma.$connect();
@@ -243,28 +222,6 @@ export async function testConnection(retries = MAX_RETRIES): Promise<boolean> {
   } catch (error: any) {
     const errorMessage = error?.message || 'Unknown error';
     logger.error('Database connection test failed:', { error: errorMessage });
-    
-    // If using pooler connection and it fails, try direct connection
-    if (!usingDirectConnection && process.env.NODE_ENV === 'production') {
-      logger.info('Pooler connection failed, attempting direct connection fallback...');
-      try {
-        await prisma.$disconnect();
-      } catch (disconnectError) {
-        // Ignore disconnect errors
-      }
-      
-      prisma = createPrismaClient(true);
-      usingDirectConnection = true;
-      
-      try {
-        await prisma.$connect();
-        await prisma.$queryRaw`SELECT 1`;
-        logger.info('Direct connection fallback successful');
-        return true;
-      } catch (fallbackError: any) {
-        logger.error('Direct connection fallback also failed:', { error: fallbackError?.message });
-      }
-    }
     
     if (retries > 0) {
       const delay = RETRY_DELAY + (MAX_RETRIES - retries) * 2000;
