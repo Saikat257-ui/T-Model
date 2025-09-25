@@ -7,7 +7,9 @@ const prisma = new PrismaClient({
   log: process.env.NODE_ENV === 'development' ? ['query', 'info', 'warn', 'error'] : ['error'],
   datasources: {
     db: {
-      url: `${process.env.DATABASE_URL}?pgbouncer=true`,
+      url: process.env.NODE_ENV === 'production' 
+        ? process.env.DATABASE_URL?.replace(':6543', ':5432') // Use direct connection in production
+        : `${process.env.DATABASE_URL}?pgbouncer=true`,      // Use connection pooling in development
     },
   },
 });
