@@ -1,6 +1,4 @@
-import { PrismaClient } from '@prisma/client';
-
-const prisma = new PrismaClient();
+import prisma from '../utils/database';
 
 // Define enums manually until Prisma client is regenerated
 export enum BadgeCategory {
