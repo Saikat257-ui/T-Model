@@ -35,16 +35,18 @@ function buildConnectionUrl() {
       const url = new URL(baseUrl);
       url.port = '5432'; // Direct connection port
       
-      // Add required SSL and connection parameters
+      // Add required SSL and connection parameters with increased timeouts
       const params = new URLSearchParams({
         'sslmode': 'require',
-        'connection_limit': '10',
-        'pool_timeout': '30',
-        'connect_timeout': '20'
+        'connection_limit': '5',
+        'pool_timeout': '60',
+        'connect_timeout': '60',
+        'max_retries': '3',
+        'retry_interval': '5'
       });
       
       url.search = params.toString();
-      logger.info('Using production database configuration with SSL and connection pooling');
+      logger.info('Using production database configuration with SSL and optimized connection pooling');
       return url.toString();
     }
 
@@ -57,7 +59,7 @@ function buildConnectionUrl() {
   }
 }
 
-// Create Prisma client with robust configuration
+// Create Prisma client with robust configuration and logging
 const prisma = new PrismaClient({
   log: [
     { level: 'warn', emit: 'event' },
@@ -69,7 +71,7 @@ const prisma = new PrismaClient({
     db: {
       url: buildConnectionUrl(),
     },
-  },
+  }
 });
 
 // Log all database events

@@ -6,6 +6,7 @@ import { createError } from '../middleware/errorHandler';
 import { logger } from '../utils/logger';
 import prisma from '../utils/database';
 import { getIndustriesWithFallback } from '../utils/initializeIndustries';
+import { retryOperation } from '../utils/retryOperation';
 
 const router = express.Router();
 
@@ -29,21 +30,27 @@ router.post('/register', async (req, res, next) => {
   try {
     const validatedData = registerSchema.parse(req.body);
     
-    // Check if user already exists
-    const existingUser = await prisma.user.findUnique({
-      where: { email: validatedData.email }
-    });
+    // Check if user already exists with retry logic
+    const existingUser = await retryOperation(
+      async () => prisma.user.findUnique({
+        where: { email: validatedData.email }
+      }),
+      'Check existing user'
+    );
 
     if (existingUser) {
       throw createError(400, 'User already exists with this email');
     }
 
-    // Verify industry exists if provided
+    // Verify industry exists if provided with retry logic
     let industry: any = null;
     if (validatedData.industryId) {
-      industry = await prisma.industry.findUnique({
-        where: { id: validatedData.industryId }
-      });
+      industry = await retryOperation(
+        async () => prisma.industry.findUnique({
+          where: { id: validatedData.industryId }
+        }),
+        'Verify industry'
+      );
 
       if (!industry) {
         throw createError(400, 'Invalid industry selected');
@@ -122,11 +129,17 @@ router.post('/login', async (req, res, next) => {
   try {
     const validatedData = loginSchema.parse(req.body);
 
-    // Find user
-    const user = await prisma.user.findUnique({
-      where: { email: validatedData.email },
-      include: { industry: true }
-    });
+    // Find user with retry logic
+    const user = await retryOperation(
+      async () => {
+        const result = await prisma.user.findUnique({
+          where: { email: validatedData.email },
+          include: { industry: true }
+        });
+        return result;
+      },
+      'Find user for login'
+    );
 
     if (!user || !user.isActive) {
       throw createError(401, 'Invalid credentials');
