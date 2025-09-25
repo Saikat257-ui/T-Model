@@ -163,33 +163,26 @@ function getConnectionUrl() {
     throw new Error('DATABASE_URL environment variable is not set');
   }
 
-  try {
-    const url = new URL(process.env.DATABASE_URL);
-    const isProd = process.env.NODE_ENV === 'production';
-
-    if (isProd) {
-      // For Render deployment, use direct connection (port 5432) with SSL
-      // This avoids pooler connection issues on Render
-      url.port = '5432';
-      
-      // Clear existing search params and set required ones
-      url.search = '';
-      url.searchParams.set('sslmode', 'require');
-      url.searchParams.set('connect_timeout', '60');
-      url.searchParams.set('pool_timeout', '60');
-      url.searchParams.set('statement_timeout', '60000');
-      
-      logger.info('Using production configuration with direct connection');
-      return url.toString();
-    }
-
-    // Development configuration
-    logger.info('Using development configuration');
-    return process.env.DATABASE_URL;
-  } catch (error) {
-    logger.error('Failed to build connection URL:', error);
-    throw error;
+  const isProd = process.env.NODE_ENV === 'production';
+  
+  if (isProd) {
+    // For Render, use the original DATABASE_URL with pgbouncer settings
+    // Render works better with pooler connections
+    const url = process.env.DATABASE_URL;
+    
+    // Add pgbouncer parameter if not present
+    const separator = url.includes('?') ? '&' : '?';
+    const finalUrl = url.includes('pgbouncer=true') 
+      ? url 
+      : `${url}${separator}pgbouncer=true&prepared_statements=false`;
+    
+    logger.info('Using production configuration with pooler connection');
+    return finalUrl;
   }
+
+  // Development configuration
+  logger.info('Using development configuration');
+  return process.env.DATABASE_URL;
 }
 
 // Create Prisma client with connection pooling settings
