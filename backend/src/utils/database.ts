@@ -167,36 +167,32 @@ function getConnectionUrl() {
     const url = new URL(process.env.DATABASE_URL);
     const isProd = process.env.NODE_ENV === 'production';
 
-    // For production with Supabase, we need to:
-    // 1. Use pooler connection (port 6543)
-    // 2. Enable SSL and set proper connection parameters
     if (isProd) {
-      // Ensure we're using the pooler port
-      url.port = '6543';
+      // For Render deployment, use direct connection (port 5432) with SSL
+      // This avoids pooler connection issues on Render
+      url.port = '5432';
       
-      // Set required SSL and connection parameters for Supabase
+      // Clear existing search params and set required ones
+      url.search = '';
       url.searchParams.set('sslmode', 'require');
-      url.searchParams.set('schema', 'public');
-      url.searchParams.set('pgbouncer', 'true');
-      url.searchParams.set('connection_limit', '5');
-      url.searchParams.set('pool_timeout', '20');
-      url.searchParams.set('connect_timeout', '10');
+      url.searchParams.set('connect_timeout', '60');
+      url.searchParams.set('pool_timeout', '60');
+      url.searchParams.set('statement_timeout', '60000');
       
-      logger.info('Using production configuration with connection pooling');
+      logger.info('Using production configuration with direct connection');
       return url.toString();
     }
 
-    // Development configuration uses direct connection
-    logger.info('Using development configuration with direct connection');
-    url.searchParams.delete('pgbouncer');
-    return url.toString();
+    // Development configuration
+    logger.info('Using development configuration');
+    return process.env.DATABASE_URL;
   } catch (error) {
     logger.error('Failed to build connection URL:', error);
     throw error;
   }
 }
 
-// Create Prisma client
+// Create Prisma client with connection pooling settings
 const prisma = new PrismaClient({
   log: [
     { level: 'warn', emit: 'event' },
@@ -227,28 +223,24 @@ prisma.$on('info', (e) => {
 // Test database connection with retries
 export async function testConnection(retries = MAX_RETRIES): Promise<boolean> {
   try {
-    await prisma.$disconnect(); // Ensure we start fresh
     await prisma.$connect();
-    await prisma.$executeRaw`SELECT 1`; // Use executeRaw for better error handling
+    await prisma.$queryRaw`SELECT 1`;
     logger.info('Database connection test successful');
     return true;
   } catch (error: any) {
     const errorMessage = error?.message || 'Unknown error';
-    logger.error('Database connection test failed:', { error: errorMessage, code: error?.code });
-    
-    // Specific handling for common errors
-    if (error?.message?.includes('timeout')) {
-      logger.warn('Connection timeout detected - this might be due to high load or network issues');
-    }
+    logger.error('Database connection test failed:', { error: errorMessage });
     
     if (retries > 0) {
-      const delay = RETRY_DELAY * (MAX_RETRIES - retries + 1); // Exponential backoff
+      const delay = RETRY_DELAY + (MAX_RETRIES - retries) * 5000; // Progressive delay
       logger.info(`Retrying connection in ${delay/1000} seconds... (${retries} attempts remaining)`);
       await new Promise(resolve => setTimeout(resolve, delay));
       return testConnection(retries - 1);
     }
     
     logger.error('All connection attempts failed');
+    logger.error('[SERVER STARTUP] Failed to establish database connection after multiple retries');
+    logger.error('[SERVER STARTUP] Server will continue running but database operations will fail');
     return false;
   }
 }
