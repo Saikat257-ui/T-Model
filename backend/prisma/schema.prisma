@@ -1,6 +1,7 @@
 generator client {
   provider      = "prisma-client-js"
-  binaryTargets = ["native", "debian-openssl-3.0.x"] # Force update for Render deployment
+  // Force update for Render deployment
+  binaryTargets = ["native", "debian-openssl-3.0.x"]
 }
 
 datasource db {
