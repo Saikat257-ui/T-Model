@@ -8,7 +8,8 @@ The T-Model Platform is a comprehensive multi-industry business management syste
 
 - **Node.js**: Version 18 or higher
 - **npm**: Version 8 or higher
-- **Supabase Account**: For database and storage
+- **PostgreSQL**: Version 12 or higher (managed via Render)
+- **Supabase Account**: For storage
 - **Git**: For version control
 
 ## 🚀 Quick Setup
@@ -40,8 +41,8 @@ NODE_ENV=development
 JWT_SECRET=your_super_secret_jwt_key_here_change_in_production
 JWT_EXPIRES_IN=7d
 
-# Supabase Database Configuration
-DATABASE_URL="postgresql://postgres:[YOUR-PASSWORD]@db.[YOUR-PROJECT-REF].supabase.co:5432/postgres"
+# Render Database Configuration
+DATABASE_URL="postgresql://postgres:[YOUR-PASSWORD]@db.[YOUR-PROJECT-REF].render.com:5432/postgres"
 
 # Supabase Configuration
 SUPABASE_URL=https://[YOUR-PROJECT-REF].supabase.co

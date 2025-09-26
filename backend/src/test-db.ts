@@ -34,9 +34,9 @@ async function testDatabaseConnection() {
     const result = await prisma.$queryRaw`SELECT 1 + 1 AS result;`;
     console.log('Database query successful!');
     console.log('Query result:', result);
-    console.log('✅ Database connection is working correctly!');
+    console.log('Database connection is working correctly!');
   } catch (error) {
-    console.error('❌ Failed to connect to the database or execute query.');
+    console.error('Failed to connect to the database or execute query.');
     console.error('Error details:', error);
     process.exit(1);
   } finally {
