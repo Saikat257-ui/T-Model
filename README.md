@@ -76,10 +76,10 @@ GENERATE_SOURCEMAP=false
 cd backend
 
 # Generate Prisma client
-npm run prisma:generate
+npx prisma generate
 
 # Push database schema to Supabase
-npm run prisma:push
+npx prisma db push
 
 # Seed database with initial data (If needed)
 npm run prisma:seed
